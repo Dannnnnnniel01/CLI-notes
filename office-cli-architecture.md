@@ -36,3 +36,16 @@ officecli raw-set report.docx document \
   --xpath "//w:p[1]" --action append \
   --xml '<w:r><w:t>Injected text</w:t></w:r>'
 ```
+
+---
+## office-cli在智能体上的优势
+- 确定性 JSON 输出 —— 每条命令都支持 --json，schema 一致。无需正则解析、无需抓 stdout。
+- 基于路径的寻址 —— 每个元素都有稳定路径（/slide[1]/shape[2]）。智能体无需理解 XML 命名空间即可导航文（OfficeCLI 自己的语法：1-based 索引、元素本地名——不是 XPath。）
+- 渐进式复杂度（L1 → L2 → L3） —— 智能体从只读视图入手，升级到 DOM 操作，仅在必要时降到 raw XML。最大限度节token。
+- 自愈式工作流 —— validate、view issues、以及结构化错误码（not_found、invalid_value、unsupported_property）- 会返回 suggestion 和有效范围。智能体无需人工介入即可自纠错。
+- 内置 agent 友好渲染引擎 —— view html / view screenshot / watch 原生输出 HTML 和 PNG。无Office。智能体能"看见"自己的产出，并在 CI / Docker / 无头环境里修复排版问题。
+- 内置公式与透视引擎 —— 150+ Excel 函数写入即自动求值；从源数据范围一条命令生成原生 OOXML 数据透视表。智能体立刻读到计算值和聚合结果，不需要回到 Office 重算。
+- 模板合并 —— 智能体一次性设计版式，下游代码把 {{key}} 占位符填充 N 次。避免每份报告都烧 token 重生成。
+- Dump 往返 —— dump 把任意 .docx 转成可重放的 batch JSON。智能体通过读结构化规格学习人类范本，而不是从原始 OOXML XML 反推。
+- 内置帮助 —— 属性名或取值格式不确定时，智能体跑 officecli <format> set <element>，不靠猜。
+- 自动安装 —— OfficeCLI 自动识别您的 AI 工具（Claude Code、Cursor、VS Code…）并完成配置。无需手动放 skill 文件。
