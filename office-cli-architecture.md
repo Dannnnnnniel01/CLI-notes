@@ -11,6 +11,29 @@ AI 负责“理解 + 决策”，其余由 CLI 执行。
 
 ---
 ## 1.第一层：View
+L1 层的能力边界：
+* 读取文本
+* 提取结构
+* 生成摘要
+* 识别标题层级
+* 输出统计信息
+* 转 JSON / view model
+L1作用是：复杂office文件 -> AI可理解结构
+### CLI在这一层做了什么
+当 AI 或者是用户输入了一条 L1 的命令（如 officecli view outline），OfficeCLI 的 .NET 运行时在后台其实经历了一场流式解析的暴风雨。它主要做了三件事：**解包过滤、语义提取、结构化输出（把文档翻译成“AI 友好的 JSON”）**。
+### AI在这一层做了什么
+AI 不需要碰具体的文档内容。它扮演的是“总指挥”。AI 在拿到 CLI 吐出的 JSON 报告后，主要做三件事：**建立空间感、诊断问题、下达下一阶段指令**。
+```
+{
+  "path": "/body/paragraph[42]",
+  "text": "北京飞书科技有限公司",
+  "styles": {
+    "font": "宋体",
+    "size": 12,
+    "bold": true
+  }
+}
+```
 ```
 # L1 — 高级视图
 officecli view report.docx annotated
@@ -20,6 +43,18 @@ officecli view budget.xlsx text --cols A,B,C --max-lines 50
 ---
 
 ## 2.第二层：DOM
+L2 层是日常读写、修改、增删的核心。它借鉴了网页开发的 DOM（Document Object Model） 思想，把 Office 文档里的段落、表格、单元格、形状，全部映射成了一条条清晰的路径（URI Selector）。
+### CLI在这一层做了什么
+在 L2 层，CLI 的核心任务是：把 AI 发出的高级、抽象的 DOM 路径命令，翻译成底层极其严苛的 OpenXML 规范修改，并保证文件不损坏。
+
+它对 AI 传过来的 JSON 进行语法和类型强校验（如检查 size 是不是数字，bold 是不是布尔值）。校验通过后，CLI 的抽象层开始将 JSON 对象序列化（Serialization），翻译成微软的 <w:p>、<w:rPr>、<w:b/> 等底层 OpenXML 节点。最终，本地磁盘/内存的文件系统执行覆写操作，重组 ZIP 压缩包
+### AI在这一层做了什么
+在 L2 层，AI 的大脑已经脱离了宏观的大纲，它的注意力完全聚焦在 L1 规划出来的特定局部节点上。AI 在这一层主要执行符号参数化（Parameterization）和内容生成（Generation）。
+
+**触发条件**：基于第一层（L1）拿到的文档快照情报，以及用户输入的最终业务目标。
+**AI 的工作**：LLM 在内部进行参数化映射（Parameterization）。它将“把公司名改成飞书并加粗”的自然语言，编码成符合 OfficeCLI L2 规范的控制参数。
+**输出物**：AI 亲手生成了那段包含 path、text、styles 的控制 JSON。
+
 ```
 # L2 — 元素级操作
 officecli query report.docx "run:contains(TODO)"
