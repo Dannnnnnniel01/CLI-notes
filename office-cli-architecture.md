@@ -8,3 +8,31 @@
 ---
 
 AI 负责“理解 + 决策”，其余由 CLI 执行。
+
+---
+## 1.第一层：View
+```
+# L1 — 高级视图
+officecli view report.docx annotated
+officecli view budget.xlsx text --cols A,B,C --max-lines 50
+```
+
+---
+
+## 2.第二层：DOM
+```
+# L2 — 元素级操作
+officecli query report.docx "run:contains(TODO)"
+officecli add budget.xlsx / --type sheet --prop name="Q2 Report"
+officecli move report.docx /body/p[5] --to /body --index 1
+```
+
+---
+## 3.第三层： Raw XML
+```
+# L3 — L2 不够时用原始 XML
+officecli raw deck.pptx '/slide[1]'
+officecli raw-set report.docx document \
+  --xpath "//w:p[1]" --action append \
+  --xml '<w:r><w:t>Injected text</w:t></w:r>'
+```
